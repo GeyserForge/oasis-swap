@@ -153,7 +153,7 @@ contract OasisSwapRouter02 is IOasisSwapRouter02, IRebateEstimator {
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountA, uint amountB) {
         address pair = OasisSwapLibrary.pairFor(factory, tokenA, tokenB);
-        uint value = approveMax ? uint(-1) : liquidity;
+        uint value = approveMax ? type(uint256).max : liquidity;
         IOasisSwapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
     }
@@ -167,7 +167,7 @@ contract OasisSwapRouter02 is IOasisSwapRouter02, IRebateEstimator {
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountToken, uint amountETH) {
         address pair = OasisSwapLibrary.pairFor(factory, token, WETH);
-        uint value = approveMax ? uint(-1) : liquidity;
+        uint value = approveMax ? type(uint256).max : liquidity;
         IOasisSwapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
@@ -204,7 +204,7 @@ contract OasisSwapRouter02 is IOasisSwapRouter02, IRebateEstimator {
         bool approveMax, uint8 v, bytes32 r, bytes32 s
     ) external virtual override returns (uint amountETH) {
         address pair = OasisSwapLibrary.pairFor(factory, token, WETH);
-        uint value = approveMax ? uint(-1) : liquidity;
+        uint value = approveMax ? type(uint256).max : liquidity;
         IOasisSwapPair(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
             token, liquidity, amountTokenMin, amountETHMin, to, deadline

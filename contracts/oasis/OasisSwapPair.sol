@@ -89,7 +89,7 @@ contract OasisSwapPair is OasisSwapERC20 {
 
     // update reserves and, on the first call per block, price accumulators
     function _update(uint balance0, uint balance1, uint112 _reserve0, uint112 _reserve1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), 'OasisSwap: OVERFLOW');
+        require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, 'OasisSwap: OVERFLOW');
         uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _reserve0 != 0 && _reserve1 != 0) {
@@ -138,7 +138,7 @@ contract OasisSwapPair is OasisSwapERC20 {
             address migrator = IOasisSwapFactory(factory).migrator();
             if (msg.sender == migrator) {
                 liquidity = IMigrator(migrator).desiredLiquidity();
-                require(liquidity > 0 && liquidity != uint256(-1), "Bad desired liquidity");
+                require(liquidity > 0 && liquidity != type(uint256).max, "Bad desired liquidity");
             } else {
                 require(migrator == address(0), "Must not have migrator");
                 liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
