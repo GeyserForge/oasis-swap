@@ -276,12 +276,24 @@ contract OasisSwapPair is OasisSwapERC20 {
         _safeTransfer(_token1, to, IERC20Uniswap(_token1).balanceOf(address(this)).sub(feeCache1).sub(reserve1));
     }
 
-    function withdrawFee(address to) external {
-        require(IOasisSwapFactory(factory).isFeeManager(msg.sender), 'OasisSwap: FORBIDDEN');
-        _safeTransfer(token0, to, feeCache0);
-        _safeTransfer(token1, to, feeCache1);
+    function withdrawFee(address _to, bool _send0, bool _send1) external lock {
+        uint256 _toSend0 = feeCache0;
+        uint256 _toSend1 = feeCache1;
         feeCache0 = 0;
         feeCache1 = 0;
+        require(IOasisSwapFactory(factory).isFeeManager(msg.sender), 'OasisSwap: FORBIDDEN');
+
+        if (_send0) {
+            _safeTransfer(token0, _to, _toSend0);
+            _toSend0 = 0;
+        }
+        if (_send1) {
+            _safeTransfer(token1, _to, _toSend1);
+            _toSend1 = 0;
+        }
+
+        feeCache0 = _toSend0;
+        feeCache1 = _toSend1;
     }
 
     function setFee(uint64 _fee, uint64 _oasisFeeProportion) public {
