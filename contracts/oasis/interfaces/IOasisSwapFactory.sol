@@ -14,6 +14,8 @@ interface IOasisSwapFactory {
 
     function createPair(address tokenA, address tokenB) external returns (address pair);
 
+    function mevControlPre(address sender) external;
+    function mevControlPost(address sender) external;
     function setFeeTo(address) external;
     function setMigrator(address) external;
 

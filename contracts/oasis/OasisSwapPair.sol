@@ -50,6 +50,11 @@ contract OasisSwapPair is OasisSwapERC20 {
         _;
         unlocked = 1;
     }
+    modifier mevControl() {
+        IOasisSwapFactory(factory).mevControlPre(msg.sender);
+        _;
+        IOasisSwapFactory(factory).mevControlPost(msg.sender);
+    }
 
     function getReserves() public view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast) {
         _reserve0 = reserve0;
@@ -181,7 +186,7 @@ contract OasisSwapPair is OasisSwapERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swapCalculatingRebate(uint amount0Out, uint amount1Out, address to, address feeController, bytes calldata data) external lock {
+    function swapCalculatingRebate(uint amount0Out, uint amount1Out, address to, address feeController, bytes calldata data) external lock mevControl {
         require(feeController == msg.sender || feeController == tx.origin || feeController == to, "OasisSwap: INVALID_FEE_CONTROLLER");
         uint64 feeRebate = IRebateEstimator(factory).getRebate(feeController);
         (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, feeRebate, data);
@@ -189,13 +194,13 @@ contract OasisSwapPair is OasisSwapERC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
+    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock mevControl {
         (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, 0, data);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swapWithRebate(uint amount0Out, uint amount1Out, address to, uint64 feeRebate, bytes calldata data) external lock {
+    function swapWithRebate(uint amount0Out, uint amount1Out, address to, uint64 feeRebate, bytes calldata data) external lock mevControl {
         require(IOasisSwapFactory(factory).isRebateApprovedRouter(msg.sender), "OasisSwap: INVALID_REBATE_ORIGIN");
         require(feeRebate <= FEE_DIVISOR, "OasisSwap: INVALID_REBATE");
         (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, feeRebate, data);

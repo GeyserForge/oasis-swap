@@ -4,6 +4,7 @@ pragma solidity >=0.6.12;
 
 import './interfaces/IOasisSwapFactory.sol';
 import './interfaces/IRebateEstimator.sol';
+import './interfaces/IMevController.sol';
 import './OasisSwapPair.sol';
 import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
 
@@ -18,6 +19,7 @@ contract OasisSwapFactory is IOasisSwapFactory, Ownable, IRebateEstimator {
     mapping(address => bool) public isFeeManager_;
     mapping(address => bool) public rebateApprovedRouters;
     address public override rebateManager;
+    address mevController;
 
     mapping(address => mapping(address => address)) public override getPair;
     address[] public override allPairs;
@@ -50,6 +52,21 @@ contract OasisSwapFactory is IOasisSwapFactory, Ownable, IRebateEstimator {
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
         emit PairCreated(token0, token1, pair, allPairs.length);
+    }
+
+    function mevControlPre(address sender) public override {
+        if (mevController != address(0)) {
+            IMevController(mevController).pre(msg.sender, sender);
+        }
+    }
+    function mevControlPost(address sender) public override {
+        if (mevController != address(0)) {
+            IMevController(mevController).post(msg.sender, sender);
+        }
+    }
+
+    function setMevController(address _mevController) public onlyOwner {
+        mevController = _mevController;
     }
 
     function setFeeTo(address _feeTo) external override onlyOwner {

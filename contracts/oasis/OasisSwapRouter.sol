@@ -244,7 +244,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         address to,
         uint deadline,
         bool useRebate
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+    ) external virtual override ensure(deadline) mevControl returns (uint[] memory amounts) {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
         amounts = OasisSwapLibrary.getAmountsOut(factory, amountIn, path, feeRebate);
         require(amounts[amounts.length - 1] >= amountOutMin, 'OasisSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT');
@@ -264,7 +264,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         address to,
         uint deadline,
         bool useRebate
-    ) external virtual override ensure(deadline) returns (uint[] memory amounts) {
+    ) external virtual override ensure(deadline) mevControl returns (uint[] memory amounts) {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
         amounts = OasisSwapLibrary.getAmountsIn(factory, amountOut, path, feeRebate);
         require(amounts[0] <= amountInMax, 'OasisSwapRouter: EXCESSIVE_INPUT_AMOUNT');
@@ -283,6 +283,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         override
         payable
         ensure(deadline)
+        mevControl
         returns (uint[] memory amounts)
     {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
@@ -302,6 +303,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         virtual
         override
         ensure(deadline)
+        mevControl
         returns (uint[] memory amounts)
     {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
@@ -324,6 +326,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         virtual
         override
         ensure(deadline)
+        mevControl
         returns (uint[] memory amounts)
     {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
@@ -347,6 +350,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         override
         payable
         ensure(deadline)
+        mevControl
         returns (uint[] memory amounts)
     {
         uint64 feeRebate = useRebate ? getRebate(to) : 0;
@@ -410,7 +414,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         address to,
         uint deadline,
         bool useRebate
-    ) external virtual override ensure(deadline) {
+    ) external virtual override ensure(deadline) mevControl {
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, OasisSwapLibrary.pairFor(factory, path[0], path[1]), amountIn
         );
@@ -437,6 +441,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         override
         payable
         ensure(deadline)
+        mevControl
     {
         require(path[0] == WETH, 'OasisSwapRouter: INVALID_PATH');
         uint amountIn = msg.value;
@@ -465,6 +470,7 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         virtual
         override
         ensure(deadline)
+        mevControl
     {
         require(path[path.length - 1] == WETH, 'OasisSwapRouter: INVALID_PATH');
         TransferHelper.safeTransferFrom(
@@ -479,6 +485,12 @@ contract OasisSwapRouter is IOasisSwapRouter, IRebateEstimator {
         require(amountOut >= amountOutMin, 'OasisSwapRouter: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
+    }
+
+    modifier mevControl() {
+        IOasisSwapFactory(factory).mevControlPre(msg.sender);
+        _;
+        IOasisSwapFactory(factory).mevControlPost(msg.sender);
     }
 
     // **** LIBRARY FUNCTIONS ****
