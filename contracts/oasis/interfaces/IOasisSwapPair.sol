@@ -55,5 +55,6 @@ interface IOasisSwapPair {
     function initialize(address, address) external;
 
     function calculateFee(uint64 feeRebate) external view returns (uint256);
+    function withdrawFee(address _to, bool _send0, bool _send1) external;
     function getFeeDivisor() external view returns (uint64);
 }
