@@ -77,6 +77,16 @@ contract OasisSwapPair is OasisSwapERC20 {
         uint amount1Out,
         address indexed to
     );
+    event SwapWithFee(
+        address indexed sender,
+        uint amount0In,
+        uint amount1In,
+        uint amount0Out,
+        uint amount1Out,
+        uint feeTaken0,
+        uint feeTaken1,
+        address indexed to
+    );
     event Sync(uint112 reserve0, uint112 reserve1);
 
     constructor() public {
@@ -189,25 +199,28 @@ contract OasisSwapPair is OasisSwapERC20 {
     function swapCalculatingRebate(uint amount0Out, uint amount1Out, address to, address feeController, bytes calldata data) external lock mevControl {
         require(feeController == msg.sender || feeController == tx.origin || feeController == to, "OasisSwap: INVALID_FEE_CONTROLLER");
         uint64 feeRebate = IRebateEstimator(factory).getRebate(feeController);
-        (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, feeRebate, data);
+        (uint amount0In, uint amount1In, uint feeTaken0, uint feeTaken1) = _swap(amount0Out, amount1Out, to, feeRebate, data);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        emit SwapWithFee(msg.sender, amount0In, amount1In, amount0Out, amount1Out, feeTaken0, feeTaken1, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
     function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock mevControl {
-        (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, 0, data);
+        (uint amount0In, uint amount1In, uint feeTaken0, uint feeTaken1) = _swap(amount0Out, amount1Out, to, 0, data);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        emit SwapWithFee(msg.sender, amount0In, amount1In, amount0Out, amount1Out, feeTaken0, feeTaken1, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
     function swapWithRebate(uint amount0Out, uint amount1Out, address to, uint64 feeRebate, bytes calldata data) external lock mevControl {
         require(IOasisSwapFactory(factory).isRebateApprovedRouter(msg.sender), "OasisSwap: INVALID_REBATE_ORIGIN");
         require(feeRebate <= FEE_DIVISOR, "OasisSwap: INVALID_REBATE");
-        (uint amount0In, uint amount1In) = _swap(amount0Out, amount1Out, to, feeRebate, data);
+        (uint amount0In, uint amount1In, uint feeTaken0, uint feeTaken1) = _swap(amount0Out, amount1Out, to, feeRebate, data);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        emit SwapWithFee(msg.sender, amount0In, amount1In, amount0Out, amount1Out, feeTaken0, feeTaken1, to);
     }
 
-    function _swap(uint amount0Out, uint amount1Out, address to, uint64 feeRebate, bytes calldata data) internal returns (uint, uint){
+    function _swap(uint amount0Out, uint amount1Out, address to, uint64 feeRebate, bytes calldata data) internal returns (uint, uint, uint, uint){
         require(amount0Out > 0 || amount1Out > 0, 'OasisSwap: INSUFFICIENT_OUTPUT_AMOUNT');
         uint112[] memory _reserve = new uint112[](2);
         (_reserve[0], _reserve[1],) = getReserves(); // gas savings
@@ -227,10 +240,10 @@ contract OasisSwapPair is OasisSwapERC20 {
         uint amount1In = balance1 > _reserve[1] - amount1Out ? balance1 - (_reserve[1] - amount1Out) : 0;
         require(amount0In > 0 || amount1In > 0, 'OasisSwap: INSUFFICIENT_INPUT_AMOUNT');
 
-        { // stack depth
-        // calculate total fee
         uint feeTaken0;
         uint feeTaken1;
+        { // stack depth
+        // calculate total fee
         { // stack depth
         uint _fee = _calculateFee(feeRebate);
         feeTaken0 = amount0In.mul(_fee);
@@ -258,7 +271,7 @@ contract OasisSwapPair is OasisSwapERC20 {
 
         _update(balance0, balance1, _reserve[0], _reserve[1]);
 
-        return (amount0In, amount1In);
+        return (amount0In, amount1In, feeTaken0, feeTaken1);
     }
 
     function _calculateFee(uint64 feeRebate) internal view returns (uint256) {
