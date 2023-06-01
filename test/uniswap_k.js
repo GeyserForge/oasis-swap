@@ -17,6 +17,7 @@ const OasisSwapRouter = artifacts.require("OasisSwapRouter");
 const ERC20Mock = artifacts.require("ERC20Mock");
 const OasisSwapPair = artifacts.require("OasisSwapPair");
 const FixedRebate = artifacts.require("FixedRebate");
+const WETH9Mock = artifacts.require("WETH9Mock");
 
 
 contract('OasisSwap', (accounts) => {
@@ -32,8 +33,19 @@ contract('OasisSwap', (accounts) => {
 
 
   before(async () => {
-    factoryContract = await OasisSwapFactory.deployed();
-    routerContract = await OasisSwapRouter.deployed();
+    // local
+    const wethContract = await WETH9Mock.new();
+    factoryContract = await OasisSwapFactory.new();
+    routerContract = await OasisSwapRouter.new(factoryContract.address, wethContract.address);
+    await factoryContract.setFeeManager(routerContract.address, true);
+
+    // ganache fork from arbitrum one
+    //factoryContract = await OasisSwapFactory.at('0xbC467D80AD6401dC25B37EB86F5fcd048Ae4BF6d');
+    //routerContract = await OasisSwapRouter.at('0x5BF51Bf7aF925306866d6CF87B4B85189df67970');
+
+    // default
+    //factoryContract = await OasisSwapFactory.deployed();
+    //routerContract = await OasisSwapRouter.deployed();
 
     deployerAccount = accounts[0];
     //console.log('deployerAccount', deployerAccount);
