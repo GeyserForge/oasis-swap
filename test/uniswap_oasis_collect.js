@@ -1,4 +1,3 @@
-const MigrationUtils = require('../migrations/utils/utils.js');
 const Utils = require('./utils.js');
 const { BigNumber } = require('bignumber.js');
 const { BN, constants, expectEvent, time } = require('@openzeppelin/test-helpers');
