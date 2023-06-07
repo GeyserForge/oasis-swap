@@ -1,0 +1,11 @@
+---
+    version: '2'
+
+    services:
+      trufflesuite:
+        build:
+          context: ..
+          dockerfile: docker/Dockerfile
+        volumes:
+          - ../contracts/:/code/contracts/:ro
+          - ../test/:/code/test/:ro
